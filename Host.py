@@ -13,7 +13,7 @@ class Port:
 
 class Host:
 	def __init__(self,ipv4):
-		self.ipv4 = ipv4
+		self.ipv4 = str(ipv4)
 		self.mac = ''
 		self.vendor = ''
 		self.hostname = ''
@@ -25,4 +25,4 @@ class Host:
 		output = ''
 		for e in self.ports:
 			output += str(e)
-		return '\n'+self.ipv4+'\n'+self.os+'\n'+output
+		return '\n'+self.dns+'\n'+self.ipv4+'\n'+self.mac+'\n'+self.vendor+'\n'+self.os+'\n'+output

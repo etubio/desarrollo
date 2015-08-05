@@ -21,21 +21,21 @@ def check_key(k,l):
 def host_discovery(nm,red):
 	print 'Barrido ping (ARP en red local)'
 	hosts_up_list = nm.scan(red,arguments='-sP')['scan'].keys()
-	print 'Terminado, '+str(len(hosts_up_list))+' host(s) activo(s) encontrado(s)'
+	print str(len(hosts_up_list))+' host(s) activo(s) encontrado(s)'
 	return hosts_up_list
 	
 	
 def dns_fingerprinting(nm,ip,h):
 	print 'Escaneo de lista (DNS) para el host '+ip
-	result_dns = nm.scan(ip,arguments='-sL')['scan']
-	print 'Terminado'
-	h.dns = result_dns[ip]
+	result = nm.scan(ip,arguments='-sL')['scan']
+	if check_key(ip,result):
+		if check_key('hostname',result[ip]):
+			h.dns = result[ip]['hostname']
 
 	
 def port_scanning(nm,ip,h):
 	print 'Port scanning para el host '+ip
 	result = nm.scan(ip,arguments='-PN')
-	print 'Terminado'
 	# check keys
 	if check_key(ip,result['scan'].keys()):
 		if check_key('tcp',result['scan'][ip].keys()):
@@ -48,14 +48,20 @@ def port_scanning(nm,ip,h):
 	
 def os_fingerprinting(nm,ip,h):
 	print 'OS fingerprinting para el host '+ip
-	result = nm.scan(ip,arguments='-O')['scan'][ip]
-	print 'Terminado'
-	h.hostname = result['hostname']
-	# mac = result['addresses']['mac']
-	#texto += 'vendor: '+ str(mac) + ' (' + result['vendor'][mac] + ')\n'
-	if check_key('osclass',result):
-		if check_key('vendor',result['osclass']):
-			h.os = result['osclass']['vendor'] + ' ' + result['osclass']['osfamily']
+	result = nm.scan(ip,arguments='-O')['scan']
+	if check_key(ip,result):
+		result = result[ip]
+		if check_key('hostname',result):	
+			h.hostname = result['hostname']
+		if check_key('addresses',result):
+			if check_key('mac',result['addresses']):
+				h.mac = result['addresses']['mac']
+				if check_key('vendor',result):		
+					if check_key('mac',result['vendor']):
+						h.vendor = result['vendor'][h.mac]
+		if check_key('osclass',result):
+			if check_key('vendor',result['osclass']):
+				h.os = result['osclass']['vendor'] + ' ' + result['osclass']['osfamily']
 
 			
 def to_pdf(diccionario,title):
@@ -103,6 +109,8 @@ def main():
 
 	# to PDF
 	to_pdf(diccionario,red)
+	
+	print ("\nTerminado, ver informe generado (imforme.pdf)\n")
 
 
 main()

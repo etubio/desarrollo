@@ -1,6 +1,11 @@
 #!/usr/bin/python
 # coding 
 
+# This program scan a net by using nmap to get information of
+# each host active in the net.
+# Requires superuser.
+# Designed only for local networks
+
 import nmap, sys
 import chapter
 from Host import Host, Port
@@ -23,7 +28,7 @@ def walk_dict(d):
 # search the value of the given key in a dictionary recursively
 # check if key exists in the dictionary	
 # PRECONDITION: the key must be unique
-def _finditem(key, obj):
+def _finditem(obj, key):
     if key in obj: return obj[key]
     for k, v in obj.items():
         if isinstance(v,dict):
@@ -40,7 +45,7 @@ def host_discovery(nm,red):
 	
 
 # The objetive of this function was get the hostname,
-# but this library return always empty
+# but this library return always empty (bug?)
 def dns_fingerprinting(nm,ip,h):
 	print 'Escaneo de lista (DNS) para el host '+ip
 	result = nm.scan(ip,arguments='-sL')['scan']
@@ -81,8 +86,8 @@ def port_fingerprinting(nm,ip,h):
 		result = nm.scan(ip,arguments='-sV -p'+p.num)['scan']
 		if ip in result.keys():
 			result = result[ip]
-			if ('product' in result.keys()) & ('version' in result.keys()) & ('extrainfo' in result.keys()):
-				p.descr = descr
+			p.descr = _finditem(result,'product')+' '+_finditem(result,'version')+' '+_finditem(result,'extrainfo')
+
 			
 			
 def to_pdf(diccionario,title):

@@ -10,12 +10,26 @@ def print_usage():
 	Example 1: ./principal.py 192.168.1.0/24\n\
 	Example 2: python principal.py 192.168.1.10/32'
 	
-	
-def check_key(k,l):
-	for e in l:
-		if e == k:
-			return True
-	return False
+
+# print dictionary recursively
+def walk_dict(d):
+    for k,v in d.items():
+        if isinstance(v, dict):
+            walk_dict(v)
+        else:
+            print "%s %s" % (k, v) 
+
+
+# search the value of the given key in a dictionary recursively
+# check if key exists in the dictionary	
+# PRECONDITION: the key must be unique
+def _finditem(key, obj):
+    if key in obj: return obj[key]
+    for k, v in obj.items():
+        if isinstance(v,dict):
+            item = _finditem(v, key)
+            if item is not None:
+                return item
 
 	
 def host_discovery(nm,red):
@@ -24,45 +38,52 @@ def host_discovery(nm,red):
 	print str(len(hosts_up_list))+' host(s) activo(s) encontrado(s)'
 	return hosts_up_list
 	
-	
+
+# The objetive of this function was get the hostname,
+# but this library return always empty
 def dns_fingerprinting(nm,ip,h):
 	print 'Escaneo de lista (DNS) para el host '+ip
 	result = nm.scan(ip,arguments='-sL')['scan']
-	if check_key(ip,result):
-		if check_key('hostname',result[ip]):
-			h.dns = result[ip]['hostname']
+	if (ip in result.keys()) & ('hostname' in result[ip].keys()):
+		h.dns = result[ip]['hostname']
 
 	
 def port_scanning(nm,ip,h):
 	print 'Port scanning para el host '+ip
 	result = nm.scan(ip,arguments='-PN')
 	# check keys
-	if check_key(ip,result['scan'].keys()):
-		if check_key('tcp',result['scan'][ip].keys()):
-			found_ports = result['scan'][ip]['tcp'].keys()
-			for e in found_ports:
-				port = result['scan'][ip]['tcp'][e]	
-				p = Port('tcp',str(e),port['state'],port['name'])
-				h.ports.append(p)
+	if (ip in result['scan'].keys()) & ('tcp' in result['scan'][ip].keys()):
+		found_ports = result['scan'][ip]['tcp'].keys()
+		for e in found_ports:
+			port = result['scan'][ip]['tcp'][e]	
+			p = Port('tcp',str(e),port['state'],port['name'])
+			h.ports.append(p)
 	
 	
 def os_fingerprinting(nm,ip,h):
 	print 'OS fingerprinting para el host '+ip
 	result = nm.scan(ip,arguments='-O')['scan']
-	if check_key(ip,result):
+	if ip in result.keys():
 		result = result[ip]
-		if check_key('hostname',result):	
+		if 'hostname' in result.keys():	
 			h.hostname = result['hostname']
-		if check_key('addresses',result):
-			if check_key('mac',result['addresses']):
-				h.mac = result['addresses']['mac']
-				if check_key('vendor',result):		
-					if check_key('mac',result['vendor']):
-						h.vendor = result['vendor'][h.mac]
-		if check_key('osclass',result):
-			if check_key('vendor',result['osclass']):
-				h.os = result['osclass']['vendor'] + ' ' + result['osclass']['osfamily']
+		if ('addresses' in result.keys()) & ('mac' in result['addresses'].keys()):
+			h.mac = result['addresses']['mac']
+			if ('vendor' in result.keys()) & ('mac' in result['vendor'].keys()):		
+				h.vendor = result['vendor'][h.mac]
+		if ('osclass' in result.keys()) & ('vendor' in result['osclass'].keys()):
+			h.os = result['osclass']['vendor'] + ' ' + result['osclass']['osfamily']
 
+
+def port_fingerprinting(nm,ip,h):
+	print 'Port fingerprinting para el host '+ip
+	for p in h.ports:
+		result = nm.scan(ip,arguments='-sV -p'+p.num)['scan']
+		if ip in result.keys():
+			result = result[ip]
+			if ('product' in result.keys()) & ('version' in result.keys()) & ('extrainfo' in result.keys()):
+				p.descr = descr
+			
 			
 def to_pdf(diccionario,title):
 	chapter.title = title
@@ -93,7 +114,7 @@ def main():
 		h = Host(ip)
 		
 		# DNS Fingerprinting
-		dns_fingerprinting(nm,ip,h)
+		# dns_fingerprinting(nm,ip,h) Problem, see the def function's comment
 		
 		# Port Scanning
 		port_scanning(nm,ip,h)
@@ -102,7 +123,7 @@ def main():
 		os_fingerprinting(nm,ip,h)	
 		
 		# Port fingerprinting
-		
+		port_fingerprinting(nm,ip,h)
 		
 		print h
 		diccionario[ip] = h
@@ -110,7 +131,7 @@ def main():
 	# to PDF
 	to_pdf(diccionario,red)
 	
-	print ("\nTerminado, ver informe generado (imforme.pdf)\n")
+	print ("\nTerminado, ver informe generado (informe.pdf)")
 
 
 main()

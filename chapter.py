@@ -1,3 +1,5 @@
+# coding
+
 from fpdf import FPDF
 
 title=''

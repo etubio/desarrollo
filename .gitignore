@@ -1,0 +1,4 @@
+# Compiled source #
+###################
+*.pyc
+trunk/autonmap/pruebas.py
